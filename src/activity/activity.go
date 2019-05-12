@@ -1,40 +1,31 @@
 package activity
 
 import (
-	"github.com/inclee/gokit/src/util/stablity"
+	"strconv"
 	"time"
 )
 
-type ActivityOptions = func(Opts *Options) string
+type Verb int
 
-type Elem struct {
-	Value string
-}
-type Verb struct {
-	verb int
-}
-type Options struct {
-	Actor *Elem
-	Verb *Verb
-	Object *Elem
-	Target *Elem
+type BaseActivty struct {
+	Actor string
+	Verb Verb
+	Object string
+	Target string
 	Time time.Time
 	Extra string
 }
 
-type BaseActivty struct {
-	options *Options
-}
-
-func NewActivity(opts... ActivityOptions)*BaseActivty{
+func NewActivity(actor string,verb Verb,object string,target string,time time.Time ,extra string)*BaseActivty{
 	act := new(BaseActivty)
-	act.options = new(Options)
-	for _,opt := range opts{
-		opt(act.options)
-	}
-	stablity.AssertNil(act.options.Actor,"actor can't nil")
-	stablity.AssertNil(act.options.Verb,"verb can't nil")
-	stablity.AssertNil(act.options.Object,"object can't nil")
+	act.Actor  = actor
+	act.Verb = verb
+	act.Object = object
+	act.Time = time
+	act.Extra = extra
 	return act
 }
 
+func (self *BaseActivty)SerializeId()string{
+	return strconv.Itoa(int(self.Time.Unix()))
+}
