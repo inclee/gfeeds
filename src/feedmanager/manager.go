@@ -3,53 +3,56 @@ package feedmanager
 import (
 	"github.com/gocelery/gocelery"
 	"github.com/inclee/gfeeds/src/activity"
-	"github.com/inclee/gfeeds/src/define"
 	"github.com/inclee/gfeeds/src/feed"
+	"github.com/inclee/gfeeds/src/storage/redis"
 )
 
-var add_operation = func(feed feed.BaseFeed,activities []*activity.BaseActivty) {
-	feed.AddMany(activities)
-}
-
-type ManagerI interface {
+type ManagerDelegate interface {
 	GetFollowIds(user int)[]int
+	GetPersonalFeed(user int)feed.Feed
 }
 
 type Manager struct {
 	cli *gocelery.CeleryClient
 	follow_activity_limit int
+	delegate ManagerDelegate
 }
 
-func (m *Manager)Init()(err error){
+func NewFeedManager(delegate ManagerDelegate) *Manager {
+	m := new(Manager)
+	m.Init(delegate)
+	return m
+}
+func (m *Manager)Init(delegate ManagerDelegate)(err error){
 	m.cli ,err = gocelery.NewCeleryClient(
-		gocelery.NewRedisCeleryBroker("redis://"),
-		gocelery.NewRedisCeleryBackend("redis://"),
+		gocelery.NewRedisCeleryBroker("redis://192.168.21.231:6379"),
+		gocelery.NewRedisCeleryBackend("redis://192.168.21.231:6379"),
 		5, // number of workers
 	)
-	m.cli.Register("feedmanager.add_activities_operation",add_operation)
+	m.delegate = delegate
+	//m.cli.Register("feedmanager.add_activities_operation",Add_operation)
 	return nil
-}
-
-func (m *Manager)getUserFeedClass()feed.Feed{
-	return nil
-}
-
-func (m *Manager)getUserFollowerIds(uid int)([]int){
-	panic(define.NotImplementedException)
 }
 func (m *Manager)getUserFeed(userid int)feed.Feed {
-	feed := &feed.RedisFeed{}
-	feed.Init(userid)
+	feed := feed.NewRedisFeed()
+	feed.Init(userid,redis.NewRedisTimeLineStorage(new(redis.RedisTimeLineStorageDelegate)),&redis.ActiveStorage{})
 	return feed
 }
-func (m *Manager)AddActivity(uid int,activty *activity.BaseActivty)  {
-	user_feed := m.getUserFeedClass()
-	user_feed.Add(activty)
-	followerids := m.getUserFollowerIds(uid)
+func (m *Manager)AddActivity(uid int,act*activity.BaseActivty)  {
+	user_feed := m.delegate.GetPersonalFeed(uid)
+	user_feed.Add(act)
+	followerids := m.delegate.GetFollowIds(uid)
 	for _,fuid := range followerids{
 		user_feed = m.getUserFeed(fuid)
-		if _,err := m.cli.Delay("add",user_feed,[]*activity.BaseActivty{activty});err != nil{
-			panic(err)
+		actBytes,err := act.JsonSerialize()
+		if err == nil {
+			if _,err := m.cli.DelayKwargs("feedmanager.add_activities_operation", map[string]interface{}{
+				"user":fuid,
+				"activities": []string{string(actBytes)},
+			});err != nil{
+				panic(err)
+			}
 		}
+
 	}
 }

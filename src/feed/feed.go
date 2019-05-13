@@ -9,44 +9,33 @@ import (
 type Feed interface {
 	KeyFormat()string
 	Add(activty *activity.BaseActivty)
-	AddMany(activties []*activity.BaseActivty)int16
-	TimeLineStorage() storage.TimeLineStorage
-	ActiveStorage() storage.ActiveStorage
+	AddMany(activties []*activity.BaseActivty)int
 }
 
 type BaseFeed struct {
-	userId int
-	key string
-	timelineStorage storage.TimeLineStorage
-	activeStorage storage.ActiveStorage
+	UserId int `json:"user_id"`
+	Key string `json:"key"`
+	TimelineStorage storage.TimeLineStorager `json:"timeline_storage"`
+	ActiveStorage storage.ActiveStorager `json:"active_storage"`
 }
 
 func (self *BaseFeed)KeyFormat()string{
 	return "feed_%ds"
 }
 
-func (self *BaseFeed)TimeLineStorage()storage.TimeLineStorage{
-	return  &storage.BaseTimeLineStorage{}
-}
 
-func (self *BaseFeed)ActiveStorage()storage.ActiveStorage{
-	return &storage.BaseActiveStorage{}
-}
-
-
-
-func (self *BaseFeed)Init(userid int) {
-	self.userId = userid
-	self.key = fmt.Sprintf(self.KeyFormat(),userid)
-	self.timelineStorage = self.TimeLineStorage()
-	self.activeStorage = self.ActiveStorage()
+func (self *BaseFeed)Init(userid int,timelineStorage storage.TimeLineStorager,activityStorage storage.ActiveStorager) {
+	self.UserId= userid
+	self.Key = fmt.Sprintf(self.KeyFormat(),userid)
+	self.TimelineStorage = timelineStorage
+	self.ActiveStorage =  activityStorage
 }
 
 func (self *BaseFeed)Add(activty *activity.BaseActivty){
 	self.AddMany([]*activity.BaseActivty{activty})
 }
 
-func (self *BaseFeed)AddMany(activties []*activity.BaseActivty)int16{
-	addCount := self.timelineStorage.AddMany(self.key,activties)
+func (self *BaseFeed)AddMany(activties []*activity.BaseActivty)int{
+	addCount := self.TimelineStorage.AddMany(self.Key,activties)
 	return addCount
 }

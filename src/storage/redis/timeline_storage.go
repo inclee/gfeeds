@@ -7,24 +7,40 @@ import (
 )
 
 type RedisTimeLineStorage struct {
-	*storage.BaseTimeLineStorage
+	*storage.TimeLineStorage
 }
 
-func (self* RedisTimeLineStorage)getCache(key string)RedisTimeLineCache{
+var DefaultRedisTimelineStorage = NewRedisTimeLineStorage( new(RedisTimeLineStorageDelegate))
+
+func NewRedisTimeLineStorage(delegate storage.StoragerDelegate)*RedisTimeLineStorage {
+	rs := new (RedisTimeLineStorage)
+	rs.TimeLineStorage = &storage.TimeLineStorage{
+		Delegate:delegate,
+	}
+	return rs
+}
+
+type RedisTimeLineStorageDelegate struct {
+
+}
+func (self* RedisTimeLineStorageDelegate)getCache(key string)RedisTimeLineCache{
 	cache := RedisTimeLineCache{}
-	cache.Init("localhost:6379")
+	cache.Init("192.168.21.231:6379")
 	return cache
 }
-func (self *RedisTimeLineStorage)addToStorage(key string ,activties []*activity.BaseActivty)  int{
+func (self *RedisTimeLineStorageDelegate)AddToStorage(key string ,activties []*activity.BaseActivty)  int{
 	cache := self.getCache(key)
 	scores := make([]int,len(activties),len(activties))
 	values := make([]interface{},len(activties),len(activties))
 	for idx,act := range activties{
 		if score, err := strconv.Atoi(act.SerializeId()) ;err == nil {
 			scores[idx] = score
-			values[idx] = act
+			values[idx],_ = act.JsonSerialize()
 		}
 	}
-	cache.sortedSetCache.AddManay(key,scores,values)
-	return len(scores)
+	n,err := cache.sortedSetCache.AddManay(key,scores,values)
+	if err != nil{
+		println(err.Error())
+	}
+	return n
 }

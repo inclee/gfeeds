@@ -1,6 +1,7 @@
 package activity
 
 import (
+	"encoding/json"
 	"strconv"
 	"time"
 )
@@ -8,12 +9,12 @@ import (
 type Verb int
 
 type BaseActivty struct {
-	Actor string
-	Verb Verb
-	Object string
-	Target string
-	Time time.Time
-	Extra string
+	Actor string `json:"actor"`
+	Verb Verb `json:"verb"`
+	Object string `json:"object"`
+	Target string `json:"target"`
+	Time time.Time `json:"time"`
+	Extra string `json:"extra"`
 }
 
 func NewActivity(actor string,verb Verb,object string,target string,time time.Time ,extra string)*BaseActivty{
@@ -28,4 +29,8 @@ func NewActivity(actor string,verb Verb,object string,target string,time time.Ti
 
 func (self *BaseActivty)SerializeId()string{
 	return strconv.Itoa(int(self.Time.Unix()))
+}
+
+func (self *BaseActivty)JsonSerialize()([]byte,error){
+	return json.Marshal(self)
 }

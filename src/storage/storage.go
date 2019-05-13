@@ -3,20 +3,21 @@ package storage
 import (
 	"fmt"
 	"github.com/inclee/gfeeds/src/activity"
-	"github.com/inclee/gfeeds/src/define"
 	"hash/fnv"
 )
 
-type TimeLineStorage interface {
+type TimeLineStorager interface {
 	Add(key string ,activity *activity.BaseActivty )
-	AddMany(key string ,activties []*activity.BaseActivty ) int16
-
+	AddMany(key string ,activties []*activity.BaseActivty ) int
 }
 
-type ActiveStorage interface {
+type ActiveStorager interface {
 	Add(key string ,activity *activity.BaseActivty )
-	AddMany(key string ,activties []*activity.BaseActivty ) int16
+	AddMany(key string ,activties []*activity.BaseActivty ) int
+}
 
+type StoragerDelegate interface {
+	AddToStorage(key string ,values[]*activity.BaseActivty)int
 }
 
 type BaseStorage struct {
@@ -29,30 +30,31 @@ func (self *BaseStorage)HashKey(key string)string{
 	return fmt.Sprintf("%s_key%d",int(h.Sum32()) % self.KeysNum)
 }
 
-type BaseActiveStorage struct {
-
+type ActiveStorage struct {
+	delegate StoragerDelegate
 }
 
-type BaseTimeLineStorage struct {
-
+type TimeLineStorage struct {
+	Delegate StoragerDelegate `json:"delegate"`
 }
 
-func(self *BaseTimeLineStorage)Add(key string ,act*activity.BaseActivty ){
+func NewTimeLineStorage(delegate StoragerDelegate) *TimeLineStorage{
+	return &TimeLineStorage{
+		Delegate:delegate,
+	}
+}
+
+func(self *TimeLineStorage)Add(key string ,act*activity.BaseActivty ){
 	self.AddMany(key,[]*activity.BaseActivty{ act})
 }
-func(self *BaseTimeLineStorage)AddMany(key string ,activties []*activity.BaseActivty ) int16 {
-	return self.addToStorage(key,activties)
-}
-func (self *BaseTimeLineStorage)addToStorage(key string ,activties []*activity.BaseActivty)  int16{
-	panic(define.NotImplementedException)
+func(self *TimeLineStorage)AddMany(key string ,activties []*activity.BaseActivty ) int {
+
+	return self.Delegate.AddToStorage(key,activties)
 }
 
-func(self *BaseActiveStorage)Add(key string ,act*activity.BaseActivty )()  {
+func(self *ActiveStorage)Add(key string ,act*activity.BaseActivty )()  {
 	self.AddMany(key,[]*activity.BaseActivty{ act})
 }
-func(self *BaseActiveStorage)AddMany(key string ,activties []*activity.BaseActivty ) int16 {
-	return self.addToStorage(key,activties)
-}
-func (self *BaseActiveStorage)addToStorage(key string ,activties []*activity.BaseActivty)  int16{
-	panic(define.NotImplementedException)
+func(self *ActiveStorage)AddMany(key string ,activties []*activity.BaseActivty ) int {
+	return self.delegate.AddToStorage(key,activties)
 }

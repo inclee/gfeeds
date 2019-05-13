@@ -7,7 +7,7 @@ import (
 )
 
 type ActiveStorage struct {
-	storage.BaseActiveStorage
+	storage.ActiveStorage
 }
 
 func (self* ActiveStorage)getCache(key string)RedisTimeLineCache{
