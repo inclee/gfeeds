@@ -9,6 +9,7 @@ import (
 type TimeLineStorager interface {
 	Add(key string ,activity *activity.BaseActivty )
 	AddMany(key string ,activties []*activity.BaseActivty ) int
+	GetActivities(key string,pgx int,pgl int)[]*activity.BaseActivty
 }
 
 type ActiveStorager interface {
@@ -18,6 +19,7 @@ type ActiveStorager interface {
 
 type StoragerDelegate interface {
 	AddToStorage(key string ,values[]*activity.BaseActivty)int
+	GetActivities(key string,pgx int,pgl int)[]*activity.BaseActivty
 }
 
 type BaseStorage struct {
@@ -48,8 +50,11 @@ func(self *TimeLineStorage)Add(key string ,act*activity.BaseActivty ){
 	self.AddMany(key,[]*activity.BaseActivty{ act})
 }
 func(self *TimeLineStorage)AddMany(key string ,activties []*activity.BaseActivty ) int {
-
 	return self.Delegate.AddToStorage(key,activties)
+}
+
+func(self *TimeLineStorage)GetActivities(key string,pgx int,pgl int)[]*activity.BaseActivty{
+	return self.Delegate.GetActivities(key,pgx,pgl)
 }
 
 func(self *ActiveStorage)Add(key string ,act*activity.BaseActivty )()  {
@@ -58,3 +63,5 @@ func(self *ActiveStorage)Add(key string ,act*activity.BaseActivty )()  {
 func(self *ActiveStorage)AddMany(key string ,activties []*activity.BaseActivty ) int {
 	return self.delegate.AddToStorage(key,activties)
 }
+
+

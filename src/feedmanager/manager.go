@@ -4,7 +4,6 @@ import (
 	"github.com/gocelery/gocelery"
 	"github.com/inclee/gfeeds/src/activity"
 	"github.com/inclee/gfeeds/src/feed"
-	"github.com/inclee/gfeeds/src/storage/redis"
 )
 
 type ManagerDelegate interface {
@@ -18,32 +17,34 @@ type Manager struct {
 	delegate ManagerDelegate
 }
 
-func NewFeedManager(delegate ManagerDelegate) *Manager {
+type ManagerConfig struct {
+	CeleryBroker string
+	CeleryBackend string
+	CeleryWorkNum int
+	TimelineStorage []string
+}
+var Config ManagerConfig
+func NewFeedManager(delegate ManagerDelegate,config ManagerConfig) *Manager {
 	m := new(Manager)
-	m.Init(delegate)
+	m.Init(delegate,config)
+	Config = config
 	return m
 }
-func (m *Manager)Init(delegate ManagerDelegate)(err error){
+func (m *Manager)Init(delegate ManagerDelegate,config ManagerConfig)(err error){
 	m.cli ,err = gocelery.NewCeleryClient(
-		gocelery.NewRedisCeleryBroker("redis://192.168.21.231:6379"),
-		gocelery.NewRedisCeleryBackend("redis://192.168.21.231:6379"),
-		5, // number of workers
+		gocelery.NewRedisCeleryBroker(config.CeleryBroker),
+		gocelery.NewRedisCeleryBackend(config.CeleryBackend),
+		config.CeleryWorkNum, // number of workers
 	)
 	m.delegate = delegate
-	//m.cli.Register("feedmanager.add_activities_operation",Add_operation)
 	return nil
 }
-func (m *Manager)getUserFeed(userid int)feed.Feed {
-	feed := feed.NewRedisFeed()
-	feed.Init(userid,redis.NewRedisTimeLineStorage(new(redis.RedisTimeLineStorageDelegate)),&redis.ActiveStorage{})
-	return feed
-}
+
 func (m *Manager)AddActivity(uid int,act*activity.BaseActivty)  {
 	user_feed := m.delegate.GetPersonalFeed(uid)
 	user_feed.Add(act)
 	followerids := m.delegate.GetFollowIds(uid)
 	for _,fuid := range followerids{
-		user_feed = m.getUserFeed(fuid)
 		actBytes,err := act.JsonSerialize()
 		if err == nil {
 			if _,err := m.cli.DelayKwargs("feedmanager.add_activities_operation", map[string]interface{}{
@@ -53,6 +54,10 @@ func (m *Manager)AddActivity(uid int,act*activity.BaseActivty)  {
 				panic(err)
 			}
 		}
-
 	}
+}
+
+func (m *Manager)LoadPersonFeeds(uid int,pgx int,pgl int)[]*activity.BaseActivty{
+	user_feed := m.delegate.GetPersonalFeed(uid)
+	return user_feed.GetActivities(pgx,pgl)
 }

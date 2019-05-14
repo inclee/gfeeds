@@ -8,6 +8,7 @@ import (
 
 type Verb int
 
+
 type BaseActivty struct {
 	Actor string `json:"actor"`
 	Verb Verb `json:"verb"`

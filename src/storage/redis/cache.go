@@ -1,6 +1,8 @@
 package redis
 
-import "github.com/gomodule/redigo/redis"
+import (
+	"github.com/gomodule/redigo/redis"
+)
 
 type RedisCache struct {
 	key string
@@ -36,6 +38,17 @@ func (self RedisSortedSetCache)AddManay(key string,scores[]int,values[] interfac
 	rcvn, err = redis.Int(c.Do("zadd",params...))
 	c.Do("zrange feed_1s 0 -1")
 	return
+}
+
+func (self RedisSortedSetCache)GetMany(key string,pgx int,pgl int)([]interface{},error)  {
+	c := self.pool.Get()
+	defer  c.Close()
+	rets ,err := c.Do("ZREVRANGEBYSCORE",key,"+inf","-inf","LIMIT",pgx * pgl,pgl)
+	if err != nil {
+		return 	nil,err
+	}else{
+		return rets.([]interface{}),nil
+	}
 }
 
 type RedisTimeLineCache struct {
