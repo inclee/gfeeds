@@ -40,7 +40,7 @@ func (self *RedisTimeLineStorageDelegate)AddToStorage(key string ,activties []*a
 	cache := self.getCache(key)
 	scores := make([]int,len(activties),len(activties))
 	values := make([]interface{},len(activties),len(activties))
-	ext := make([]string,len(activties),len(activties))
+	//ext := make([]string,len(activties),len(activties))
 	for idx,act := range activties{
 		if act  == nil{
 			log.Error("activity is nil")
