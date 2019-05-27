@@ -9,6 +9,7 @@ import (
 type ManagerDelegate interface {
 	GetFollowIds(user int)[]int
 	GetPersonalFeed(user int)feed.Feed
+	GetFeed(user int)feed.Feed
 }
 
 type Manager struct {
@@ -44,6 +45,7 @@ func (m *Manager)AddActivity(uid int,act*activity.BaseActivty)  {
 	user_feed := m.delegate.GetPersonalFeed(uid)
 	user_feed.Add(act)
 	followerids := m.delegate.GetFollowIds(uid)
+	followerids = append(followerids, uid)
 	for _,fuid := range followerids{
 		actBytes,err := act.JsonSerialize()
 		if err == nil {
@@ -59,5 +61,24 @@ func (m *Manager)AddActivity(uid int,act*activity.BaseActivty)  {
 
 func (m *Manager)LoadPersonFeeds(uid int,pgx int,pgl int)[]*activity.BaseActivty{
 	user_feed := m.delegate.GetPersonalFeed(uid)
+	return user_feed.GetActivities(pgx,pgl)
+}
+
+func (m *Manager)InsertFeedActivities(uid int,acts []*activity.BaseActivty)  {
+	for _,act := range acts{
+		actBytes,err := act.JsonSerialize()
+		if err == nil {
+			if _,err := m.cli.DelayKwargs("feedmanager.add_activities_operation", map[string]interface{}{
+				"user":uid,
+				"activities": []string{string(actBytes)},
+			});err != nil{
+				panic(err)
+			}
+		}
+	}
+}
+
+func (m *Manager)LoadFeeds(uid int,pgx int,pgl int)[]*activity.BaseActivty{
+	user_feed := m.delegate.GetFeed(uid)
 	return user_feed.GetActivities(pgx,pgl)
 }
