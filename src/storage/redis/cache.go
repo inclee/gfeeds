@@ -63,7 +63,7 @@ func (self *RedisTimeLineCache)Init(server string)  {
 		MaxActive:0,
 		IdleTimeout:300,
 		Dial: func() (conn redis.Conn, e error) {
-			return redis.Dial("tcp",server)
+			return redis.Dial("tcp",server,redis.DialPassword("^YHN7ujm"))
 		},
 	}
 	self.sortedSetCache = new(RedisSortedSetCache)
