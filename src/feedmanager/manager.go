@@ -68,7 +68,21 @@ func (m *Manager)InsertFeedActivities(uid int,acts []*activity.BaseActivty)  {
 	for _,act := range acts{
 		actBytes,err := act.JsonSerialize()
 		if err == nil {
-			if _,err := m.cli.DelayKwargs("feedmanager.add_activities_operation", map[string]interface{}{
+			if _,err := m.cli.DelayKwargs("feedmanager.remove_activities_operation", map[string]interface{}{
+				"user":uid,
+				"activities": []string{string(actBytes)},
+			});err != nil{
+				panic(err)
+			}
+		}
+	}
+}
+
+func (m *Manager)RemoveFeedActivities(uid int,acts []*activity.BaseActivty)  {
+	for _,act := range acts{
+		actBytes,err := act.JsonSerialize()
+		if err == nil {
+			if _,err := m.cli.DelayKwargs("feedmanager.remove_activities_operation", map[string]interface{}{
 				"user":uid,
 				"activities": []string{string(actBytes)},
 			});err != nil{

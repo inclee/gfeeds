@@ -9,6 +9,7 @@ import (
 type TimeLineStorager interface {
 	Add(key string ,activity *activity.BaseActivty )
 	AddMany(key string ,activties []*activity.BaseActivty ) int
+	RemoveMany(key string ,activties []*activity.BaseActivty ) int
 	GetActivities(key string,pgx int,pgl int)[]*activity.BaseActivty
 }
 
@@ -19,6 +20,7 @@ type ActiveStorager interface {
 
 type StoragerDelegate interface {
 	AddToStorage(key string ,values[]*activity.BaseActivty)int
+	RemoveFromStorage(key string ,values[]*activity.BaseActivty)int
 	GetActivities(key string,pgx int,pgl int)[]*activity.BaseActivty
 }
 
@@ -51,6 +53,10 @@ func(self *TimeLineStorage)Add(key string ,act*activity.BaseActivty ){
 }
 func(self *TimeLineStorage)AddMany(key string ,activties []*activity.BaseActivty ) int {
 	return self.Delegate.AddToStorage(key,activties)
+}
+
+func(self *TimeLineStorage)RemoveMany(key string ,activties []*activity.BaseActivty ) int {
+	return self.Delegate.RemoveFromStorage(key,activties)
 }
 
 func(self *TimeLineStorage)GetActivities(key string,pgx int,pgl int)[]*activity.BaseActivty{

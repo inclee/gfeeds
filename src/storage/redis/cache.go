@@ -36,7 +36,16 @@ func (self RedisSortedSetCache)AddManay(key string,scores[]int,values[] interfac
 		params[2*idx+2] = values[idx]
 	}
 	rcvn, err = redis.Int(c.Do("zadd",params...))
-	c.Do("zrange feed_1s 0 -1")
+	return
+}
+
+func (self RedisSortedSetCache)RemoveManay(key string,values[] interface{})(rcvn int, err error){
+	c := self.pool.Get()
+	defer  c.Close()
+	params := make([]interface{},len(values)+1)
+	params[0] = key
+	params = append(params, values...)
+	rcvn, err = redis.Int(c.Do("ZREM",params...))
 	return
 }
 

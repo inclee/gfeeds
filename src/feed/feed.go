@@ -39,6 +39,17 @@ func (self *BaseFeed)AddMany(activties []*activity.BaseActivty)int{
 	}
 	return addCount
 }
+
+func (self *BaseFeed)RemoveMany(activties []*activity.BaseActivty)int{
+	var addCount int
+	if self.TimelineStorage != nil {
+		addCount = self.TimelineStorage.RemoveMany(self.Key,activties)
+	}else{
+		logrus.Error("self.TimelineStorage")
+	}
+	return addCount
+}
+
 func (self *BaseFeed)GetActivities(pgx int,pgl int) []*activity.BaseActivty{
 	ret := make([]*activity.BaseActivty,0,0)
 	if self.TimelineStorage != nil {

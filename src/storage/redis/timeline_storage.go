@@ -56,7 +56,19 @@ func (self *RedisTimeLineStorageDelegate)AddToStorage(key string ,activties []*a
 	}
 	return n
 }
-
+func (self *RedisTimeLineStorageDelegate)RemoveFromStorage(key string ,activties[]*activity.BaseActivty)int{
+	cache := self.getCache(key)
+	values := make([]interface{},len(activties),len(activties))
+	for idx, a := range activties{
+		values[idx],_ = a.JsonSerialize()
+	}
+	//ext := make([]string,len(activties),len(activties))
+	n,err := cache.sortedSetCache.RemoveManay(key,values)
+	if err != nil{
+		println(err.Error())
+	}
+	return n
+}
 func (self *RedisTimeLineStorageDelegate)GetActivities(key string, pgx int,pgl int)[]*activity.BaseActivty{
 	cache := self.getCache(key)
 	items,err := cache.sortedSetCache.GetMany(key,pgx,pgl)
