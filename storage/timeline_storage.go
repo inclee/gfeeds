@@ -1,10 +1,10 @@
-package redis
+package storage 
 
 import (
 	"encoding/json"
-	"github.com/inclee/gfeeds/src/activity"
-	"github.com/inclee/gfeeds/src/storage"
-	"github.com/inclee/gfeeds/src/feedmanager"
+	"github.com/inclee/gfeeds/activity"
+	"github.com/inclee/gfeeds/storage"
+	"github.com/inclee/gfeeds/feedmanager"
 	"hash/fnv"
 	"strconv"
 	log "github.com/gogap/logrus"

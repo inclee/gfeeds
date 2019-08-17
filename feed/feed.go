@@ -2,8 +2,8 @@ package feed
 
 import (
 	"github.com/gogap/logrus"
-	"github.com/inclee/gfeeds/src/activity"
-	"github.com/inclee/gfeeds/src/storage"
+	"github.com/inclee/gfeeds/activity"
+	"github.com/inclee/gfeeds/storage"
 )
 
 type Feed interface {

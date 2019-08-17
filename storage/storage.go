@@ -2,7 +2,7 @@ package storage
 
 import (
 	"fmt"
-	"github.com/inclee/gfeeds/src/activity"
+	"github.com/inclee/gfeeds/activity"
 	"hash/fnv"
 )
 

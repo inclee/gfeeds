@@ -1,8 +1,8 @@
-package redis
+package storage
 
 import (
-	"github.com/inclee/gfeeds/src/activity"
-	"github.com/inclee/gfeeds/src/storage"
+	"github.com/inclee/gfeeds/activity"
+	"github.com/inclee/gfeeds/storage"
 	"strconv"
 )
 

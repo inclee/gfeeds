@@ -4,17 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gogap/logrus"
-	"github.com/inclee/gfeeds/src/activity"
-	"github.com/inclee/gfeeds/src/feed"
-	"github.com/inclee/gfeeds/src/storage/redis"
+	"github.com/inclee/gfeeds/activity"
+	"github.com/inclee/gfeeds/feed"
+	"github.com/inclee/gfeeds/storage/redis"
 )
 
-type RemoveFeedTask struct {
+type AddFeedTask struct {
 	activities []*activity.BaseActivty
 	feed *feed.RedisFeed
 }
 
-func (t *RemoveFeedTask)ParseKwargs(kwargs map[string]interface{}) error {
+func (t *AddFeedTask)ParseKwargs(kwargs map[string]interface{}) error {
 	if act ,ok := kwargs["activities"];ok{
 		ais := act.([]interface{})
 		t.activities = make([]*activity.BaseActivty,len(ais),len(ais))
@@ -37,7 +37,7 @@ func (t *RemoveFeedTask)ParseKwargs(kwargs map[string]interface{}) error {
 	}
 	return nil
 }
-func (t *RemoveFeedTask) RunTask() (interface{}, error) {
-	t.feed.RemoveMany(t.activities)
+func (t *AddFeedTask) RunTask() (interface{}, error) {
+	t.feed.AddMany(t.activities)
 	return nil, nil
 }

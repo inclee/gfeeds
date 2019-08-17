@@ -1,9 +1,9 @@
 package feedmanager
 
 import (
-	"github.com/gocelery/gocelery"
-	"github.com/inclee/gfeeds/src/activity"
-	"github.com/inclee/gfeeds/src/feed"
+	"github.com/inclee/gfeeds/activity"
+	"github.com/inclee/gfeeds/feed"
+	"github.com/inclee/gocelery"
 )
 
 type ManagerDelegate interface {
@@ -71,7 +71,7 @@ func (m *Manager) LoadPersonFeeds(uid int, pgx int, pgl int) []*activity.BaseAct
 
 func (m *Manager) InsertFeedActivities(uid int, acts []*activity.BaseActivty) {
 	for _, act := range acts {
-		actBytes, err := act.JsonSerialize()
+		actBytes, err := act.Serialize()
 		if err == nil {
 			if _, err := m.cli.DelayKwargs("feedmanager.remove_activities_operation", map[string]interface{}{
 				"user":       uid,
@@ -85,7 +85,7 @@ func (m *Manager) InsertFeedActivities(uid int, acts []*activity.BaseActivty) {
 
 func (m *Manager) RemoveFeedActivities(uid int, acts []*activity.BaseActivty) {
 	for _, act := range acts {
-		actBytes, err := act.JsonSerialize()
+		actBytes, err := act.Serialize()
 		if err == nil {
 			if _, err := m.cli.DelayKwargs("feedmanager.remove_activities_operation", map[string]interface{}{
 				"user":       uid,
