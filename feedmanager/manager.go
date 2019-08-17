@@ -2,6 +2,7 @@ package feedmanager
 
 import (
 	"github.com/inclee/gfeeds/activity"
+	"github.com/inclee/gfeeds/config"
 	"github.com/inclee/gfeeds/feed"
 	"github.com/inclee/gocelery"
 )
@@ -19,27 +20,18 @@ type Manager struct {
 	feeds                 feed.Feed
 }
 
-type ManagerConfig struct {
-	CeleryBroker    string
-	CeleryBackend   string
-	CeleryWorkNum   int
-	TimelineStorage []string
-}
-
-var Config ManagerConfig
-
-func NewFeedManager(delegate ManagerDelegate, config ManagerConfig) *Manager {
+func NewFeedManager(delegate ManagerDelegate, cfg config.ManagerConfig) *Manager {
 	m := new(Manager)
-	m.Init(delegate, config)
+	m.Init(delegate, cfg)
 	m.feeds = feed.NewRedisFeed()
-	Config = config
+	config.Config = cfg
 	return m
 }
-func (m *Manager) Init(delegate ManagerDelegate, config ManagerConfig) (err error) {
+func (m *Manager) Init(delegate ManagerDelegate, cfg config.ManagerConfig) (err error) {
 	m.cli, err = gocelery.NewCeleryClient(
-		gocelery.NewRedisCeleryBroker(config.CeleryBroker),
-		gocelery.NewRedisCeleryBackend(config.CeleryBackend),
-		config.CeleryWorkNum, // number of workers
+		gocelery.NewRedisCeleryBroker(cfg.CeleryBroker),
+		gocelery.NewRedisCeleryBackend(cfg.CeleryBackend),
+		cfg.CeleryWorkNum, // number of workers
 	)
 	m.delegate = delegate
 	return nil

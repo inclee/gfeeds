@@ -2,20 +2,19 @@ package storage
 
 import (
 	"github.com/inclee/gfeeds/activity"
-	"github.com/inclee/gfeeds/storage"
 	"strconv"
 )
 
-type ActiveStorage struct {
-	storage.ActiveStorage
+type RedisActiveStorage struct {
+	ActiveStorage
 }
 
-func (self* ActiveStorage)getCache(key string)RedisTimeLineCache{
+func (self* RedisActiveStorage)getCache(key string)RedisTimeLineCache{
 	cache := RedisTimeLineCache{}
 	cache.Init("localhost:6379")
 	return cache
 }
-func (self *ActiveStorage)addToStorage(key string ,activties []*activity.BaseActivty)  int{
+func (self * RedisActiveStorage)addToStorage(key string ,activties []*activity.BaseActivty)  int{
 	cache := self.getCache(key)
 	scores := make([]int,len(activties),len(activties))
 	values := make([]interface{},len(activties),len(activties))

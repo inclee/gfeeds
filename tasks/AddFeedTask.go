@@ -6,7 +6,7 @@ import (
 	"github.com/gogap/logrus"
 	"github.com/inclee/gfeeds/activity"
 	"github.com/inclee/gfeeds/feed"
-	"github.com/inclee/gfeeds/storage/redis"
+	"github.com/inclee/gfeeds/storage"
 )
 
 type AddFeedTask struct {
@@ -33,7 +33,7 @@ func (t *AddFeedTask)ParseKwargs(kwargs map[string]interface{}) error {
 		t.feed = feed.NewRedisFeed()
 		intu := int(user.(float64))
 		logrus.Info("---> feed_user:",intu)
-		t.feed.Init(intu,fmt.Sprint("in_feed_",intu),redis.NewRedisTimeLineStorage(new(redis.RedisTimeLineStorageDelegate)),&redis.ActiveStorage{})
+		t.feed.Init(intu,fmt.Sprint("in_feed_",intu),storage.NewRedisTimeLineStorage(new(storage.RedisTimeLineStorageDelegate)),&storage.ActiveStorage{})
 	}
 	return nil
 }
