@@ -10,6 +10,15 @@ import (
 	"github.com/inclee/gocelery"
 )
 
+func intSliceContain(slice []int,v int)bool{
+	for t := range slice{
+		if t ==v {
+			return true
+		}
+	}
+	return false
+}
+
 type ManagerDelegate interface {
 	GetFollowers(user int) []int
 	GetPersonalFeed(user int) feed.Feed
@@ -45,8 +54,17 @@ func (m *Manager) AddActivity(uid int, act *activity.BaseActivty) {
 	m.feeds.Add(act)
 	user_feed := m.delegate.GetPersonalFeed(uid)
 	user_feed.Add(act)
+	if act.Priviate{
+		return
+	}
 	followerids := m.delegate.GetFollowers(uid)
 	for _, fuid := range followerids {
+		if intSliceContain(act.Allow,fuid) == false{
+			continue
+		}
+		if intSliceContain(act.Deny,fuid){
+			continue
+		}
 		actBytes, err := act.Serialize()
 		if err == nil {
 			if _, err := m.cli.DelayKwargs("feedmanager.add_activities_operation", map[string]interface{}{

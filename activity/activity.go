@@ -8,11 +8,6 @@ import (
 
 type Verb int
 
-const (
-	ActObject_Type_Body  = 1
-	ActObject_Type_Thing = 2
-)
-
 type ActObject struct {
 	Id   int `json:id`
 	Type int `json:type`
@@ -24,6 +19,9 @@ type BaseActivty struct {
 	Object ActObject `json:"object"`
 	Target int       `json:"target"`
 	Time   time.Time `json:"time"`
+	Priviate bool 	 `json:"private"`
+	Allow  []int     `json:"allow"`
+	Deny   []int     `json:deny`
 	Extra  string    `json:"extra"`
 }
 
