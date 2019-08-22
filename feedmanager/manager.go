@@ -1,9 +1,12 @@
 package feedmanager
 
 import (
+	"fmt"
+
 	"github.com/inclee/gfeeds/activity"
 	"github.com/inclee/gfeeds/config"
 	"github.com/inclee/gfeeds/feed"
+	"github.com/inclee/gfeeds/storage"
 	"github.com/inclee/gocelery"
 )
 
@@ -17,13 +20,14 @@ type Manager struct {
 	cli                   *gocelery.CeleryClient
 	follow_activity_limit int
 	delegate              ManagerDelegate
-	feeds                 feed.Feed
+	feeds                 *feed.RedisFeed
 }
 
 func NewFeedManager(delegate ManagerDelegate, cfg config.ManagerConfig) *Manager {
 	m := new(Manager)
 	m.Init(delegate, cfg)
 	m.feeds = feed.NewRedisFeed()
+	m.feeds.Init(0, fmt.Sprint("global_feed_"), storage.DefaultRedisTimelineStorage, &storage.ActiveStorage{})
 	config.Config = cfg
 	return m
 }
