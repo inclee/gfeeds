@@ -3,6 +3,7 @@ module github.com/inclee/gfeeds
 go 1.12
 
 require (
+	github.com/deckarep/golang-set v1.7.1
 	github.com/gogap/logrus v0.8.2
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/inclee/gocelery v0.0.0-20190817024410-26e0ba2e7225

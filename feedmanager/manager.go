@@ -10,9 +10,9 @@ import (
 	"github.com/inclee/gocelery"
 )
 
-func intSliceContain(slice []int,v int)bool{
-	for t := range slice{
-		if t ==v {
+func intSliceContain(slice []int, v int) bool {
+	for t := range slice {
+		if t == v {
 			return true
 		}
 	}
@@ -23,6 +23,7 @@ type ManagerDelegate interface {
 	GetFollowers(user int) []int
 	GetPersonalFeed(user int) feed.Feed
 	GetFeed(user int) feed.Feed
+	GetInterActFeed(uid int) feed.Feed
 }
 
 type Manager struct {
@@ -50,19 +51,26 @@ func (m *Manager) Init(delegate ManagerDelegate, cfg config.ManagerConfig) (err 
 	return nil
 }
 
+func (m *Manager) AddInterActivity(uid int, act *activity.BaseActivty) {
+	if act.Target != uid {
+		intactFeed := m.delegate.GetInterActFeed(act.Target)
+		intactFeed.Add(act)
+	}
+}
 func (m *Manager) AddActivity(uid int, act *activity.BaseActivty) {
 	m.feeds.Add(act)
 	user_feed := m.delegate.GetPersonalFeed(uid)
 	user_feed.Add(act)
-	if act.Priviate{
+	if act.Private {
 		return
 	}
+
 	followerids := m.delegate.GetFollowers(uid)
 	for _, fuid := range followerids {
-		if intSliceContain(act.Allow,fuid) == false{
+		if intSliceContain(act.Allow, fuid) == false {
 			continue
 		}
-		if intSliceContain(act.Deny,fuid){
+		if intSliceContain(act.Deny, fuid) {
 			continue
 		}
 		actBytes, err := act.Serialize()
@@ -81,6 +89,18 @@ func (m *Manager) AddActivity(uid int, act *activity.BaseActivty) {
 func (m *Manager) LoadPersonFeeds(uid int, pgx int, pgl int) []*activity.BaseActivty {
 	user_feed := m.delegate.GetPersonalFeed(uid)
 	return user_feed.GetActivities(pgx, pgl)
+}
+
+func (m *Manager) LoadInteractFeeds(uid int) []*activity.BaseActivty {
+	feed := m.delegate.GetInterActFeed(uid)
+	return feed.GetActivities(0, 100)
+}
+func (m *Manager) SeeInteractFeeds(uid int, feedsId []int) {
+	_feed := m.delegate.GetInterActFeed(uid)
+	if actFeed, ok := _feed.(*feed.AggregatorFeed); ok {
+		actFeed.Seen(feedsId)
+	}
+
 }
 
 func (m *Manager) InsertFeedActivities(uid int, acts []*activity.BaseActivty) {

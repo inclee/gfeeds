@@ -19,7 +19,7 @@ type BaseActivty struct {
 	Object ActObject `json:"object"`
 	Target int       `json:"target"`
 	Time   time.Time `json:"time"`
-	Priviate bool 	 `json:"private"`
+	Private bool 	 `json:"private"`
 	Allow  []int     `json:"allow"`
 	Deny   []int     `json:deny`
 	Extra  string    `json:"extra"`
@@ -45,4 +45,18 @@ func (self *BaseActivty) SerializeId() string {
 
 func (self *BaseActivty) Serialize() ([]byte, error) {
 	return json.Marshal(self)
+}
+
+func  (self *BaseActivty) DeepCopy() (*BaseActivty) {
+	return &BaseActivty{
+		Actor: self.Actor,
+		Verb: self.Verb,
+		Object: self.Object,
+		Target: self.Target,
+		Time : self.Time,
+		Private: self.Private,
+		Allow: self.Allow,
+		Deny: self.Deny,
+		Extra: self.Extra,
+	}
 }
