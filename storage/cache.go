@@ -1,17 +1,17 @@
-package storage 
+package storage
 
 import (
-	"github.com/gomodule/redigo/redis"
+	"github.com/go-redis/redis"
 )
 
 type RedisCache struct {
-	key string
-	pool *redis.Pool
-	server string
+	key     string
+	cluster *redis.ClusterClient
+	server  string
 }
 
-func (self *RedisCache)Init(pool *redis.Pool)  {
-	self.pool = pool
+func (self *RedisCache) Init(cluster *redis.ClusterClient) {
+	self.cluster = cluster
 }
 
 type RedisListCache struct {
@@ -26,60 +26,54 @@ type RedisSortedSetCache struct {
 	RedisCache
 }
 
-func (self RedisSortedSetCache)AddManay(key string,scores[]int,values[] interface{})(rcvn int, err error){
-	c := self.pool.Get()
-	defer  c.Close()
-	params := make([]interface{},2*len(scores)+1,2*len(scores)+1)
-	params[0] = key
-	for idx,score := range  scores{
-		params[2*idx+1] = score
-		params[2*idx+2] = values[idx]
+func (self RedisSortedSetCache) AddManay(key string, scores []float64, values []interface{}) (rcvn int64, err error) {
+	params := make([]redis.Z, len(scores))
+	for idx, score := range scores {
+		params[idx] = redis.Z{
+			Score:  score,
+			Member: values[idx],
+		}
 	}
-	rcvn, err = redis.Int(c.Do("zadd",params...))
+	rcvn, err = self.cluster.ZAdd(key, params...).Result()
 	return
 }
 
-func (self RedisSortedSetCache)RemoveManay(key string,values[] interface{})(rcvn int, err error){
-	c := self.pool.Get()
-	defer  c.Close()
-	params := make([]interface{},len(values)+1)
-	params[0] = key
-	params = append(params, values...)
-	rcvn, err = redis.Int(c.Do("ZREM",params...))
+func (self RedisSortedSetCache) RemoveManay(key string, values []interface{}) (rcvn int64, err error) {
+	rcvn, err = self.cluster.ZRem(key, values...).Result()
 	return
 }
 
-func (self RedisSortedSetCache)GetMany(key string,pgx int,pgl int)([]interface{},error)  {
-	c := self.pool.Get()
-	defer  c.Close()
-	rets ,err := c.Do("ZREVRANGEBYSCORE",key,"+inf","-inf","LIMIT",pgx * pgl,pgl)
+func (self RedisSortedSetCache) GetMany(key string, pgx int64, pgl int64) ([]string, error) {
+	rets, err := self.cluster.ZRevRangeByScore(key, redis.ZRangeBy{
+		Min:    "-inf",
+		Max:    "+inf",
+		Offset: int64(pgx * pgl),
+		Count:  int64(pgl),
+	},
+	).Result()
 	if err != nil {
-		return 	nil,err
-	}else{
-		return rets.([]interface{}),nil
+		return nil, err
+	} else {
+		return rets, nil
 	}
 }
 
 type RedisTimeLineCache struct {
 	sortedSetCache *RedisSortedSetCache
-	listCache *RedisListCache
-	hashCache *RedisHaseCache
+	listCache      *RedisListCache
+	hashCache      *RedisHaseCache
 }
 
-func (self *RedisTimeLineCache)Init(server string)  {
-	pool := &redis.Pool{
-		MaxIdle:16,
-		MaxActive:0,
-		IdleTimeout:300,
-		Dial: func() (conn redis.Conn, e error) {
-			return redis.Dial("tcp",server,redis.DialPassword("^YHN7ujm"))
-		},
-	}
+func (self *RedisTimeLineCache) Init(servers []string) {
+	cluster := redis.NewClusterClient(&redis.ClusterOptions{
+		Addrs:    servers,
+		Password: "v7baLZM9efsgvRI7",
+	})
 	self.sortedSetCache = new(RedisSortedSetCache)
 	self.listCache = new(RedisListCache)
 	self.hashCache = new(RedisHaseCache)
 
-	self.sortedSetCache.Init(pool)
-	self.listCache.Init(pool)
-	self.hashCache.Init(pool)
+	self.sortedSetCache.Init(cluster)
+	self.listCache.Init(cluster)
+	self.hashCache.Init(cluster)
 }

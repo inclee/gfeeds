@@ -2,15 +2,13 @@ package storage
 
 import (
 	"encoding/json"
-	"hash/fnv"
 	"strconv"
 
 	log "github.com/gogap/logrus"
 	"github.com/inclee/gfeeds/activity"
-	"github.com/inclee/gfeeds/config"
 )
 
-var RedisTimeLineCaches []*RedisTimeLineCache
+var Cache *RedisTimeLineCache
 
 type RedisTimeLineStorage struct {
 	*TimeLineStorage
@@ -29,63 +27,49 @@ func NewRedisTimeLineStorage(delegate StoragerDelegate) *RedisTimeLineStorage {
 type RedisTimeLineStorageDelegate struct {
 }
 
-func (self *RedisTimeLineStorageDelegate) getCache(key string) *RedisTimeLineCache {
-	h := fnv.New32a()
-	h.Write([]byte(key))
-	idx := int(h.Sum32()) % len(config.Config.TimelineStorage)
-	log.Info("select redis :", config.Config.TimelineStorage[idx])
-	return RedisTimeLineCaches[idx]
-}
-func (self *RedisTimeLineStorageDelegate) AddToStorage(key string, activties []*activity.BaseActivty) int {
-	cache := self.getCache(key)
-	scores := make([]int, len(activties), len(activties))
+func (self *RedisTimeLineStorageDelegate) AddToStorage(key string, activties []*activity.BaseActivty) int64 {
+	scores := make([]float64, len(activties), len(activties))
 	values := make([]interface{}, len(activties), len(activties))
 	//ext := make([]string,len(activties),len(activties))
 	for idx, act := range activties {
 		if act == nil {
 			log.Error("activity is nil")
 		}
-		if score, err := strconv.Atoi(act.SerializeId()); err == nil {
+		if score, err := strconv.ParseFloat(act.SerializeId(),64); err == nil {
 			scores[idx] = score
 			values[idx], _ = act.Serialize()
 		}
 	}
-	n, err := cache.sortedSetCache.AddManay(key, scores, values)
+	n, err := Cache.sortedSetCache.AddManay(key, scores, values)
 	if err != nil {
 		println(err.Error())
 	}
 	return n
 }
-func (self *RedisTimeLineStorageDelegate) RemoveFromStorage(key string, activties []*activity.BaseActivty) int {
-	cache := self.getCache(key)
+func (self *RedisTimeLineStorageDelegate) RemoveFromStorage(key string, activties []*activity.BaseActivty) int64 {
 	values := make([]interface{}, len(activties), len(activties))
 	for idx, a := range activties {
 		values[idx], _ = a.Serialize()
 	}
 	//ext := make([]string,len(activties),len(activties))
-	n, err := cache.sortedSetCache.RemoveManay(key, values)
+	n, err := Cache.sortedSetCache.RemoveManay(key, values)
 	if err != nil {
 		println(err.Error())
 	}
 	return n
 }
-func (self *RedisTimeLineStorageDelegate) GetActivities(key string, pgx int, pgl int) []*activity.BaseActivty {
-	cache := self.getCache(key)
-	items, err := cache.sortedSetCache.GetMany(key, pgx, pgl)
+func (self *RedisTimeLineStorageDelegate) GetActivities(key string, pgx int64, pgl int64) []*activity.BaseActivty {
+	items, err := Cache.sortedSetCache.GetMany(key, pgx, pgl)
 	if err != nil {
 		log.Error(err.Error())
 	}
 	acts := make([]*activity.BaseActivty, 0, 0)
 	for _, item := range items {
-		if bits, ok := item.([]byte); ok {
-			act := new(activity.BaseActivty)
-			if err := json.Unmarshal(bits, act); err != nil {
-				log.Error(err.Error())
-			} else {
-				acts = append(acts, act)
-			}
+		act := new(activity.BaseActivty)
+		if err := json.Unmarshal([]byte(item), act); err != nil {
+			log.Error(err.Error())
 		} else {
-			log.Error("cover type failed", item)
+			acts = append(acts, act)
 		}
 	}
 	return acts

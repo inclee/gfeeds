@@ -8,8 +8,8 @@ import (
 
 type Feed interface {
 	Add(activty *activity.BaseActivty)
-	AddMany(activties []*activity.BaseActivty) int
-	GetActivities(pgx int, pgl int) []*activity.BaseActivty
+	AddMany(activties []*activity.BaseActivty) int64
+	GetActivities(pgx int64, pgl int64) []*activity.BaseActivty
 }
 
 type BaseFeed struct {
@@ -30,8 +30,8 @@ func (self *BaseFeed) Add(activty *activity.BaseActivty) {
 	self.AddMany([]*activity.BaseActivty{activty})
 }
 
-func (self *BaseFeed) AddMany(activties []*activity.BaseActivty) int {
-	var addCount int
+func (self *BaseFeed) AddMany(activties []*activity.BaseActivty) int64 {
+	var addCount int64
 	if self.TimelineStorage != nil {
 		addCount = self.TimelineStorage.AddMany(self.Key, activties)
 	} else {
@@ -40,8 +40,8 @@ func (self *BaseFeed) AddMany(activties []*activity.BaseActivty) int {
 	return addCount
 }
 
-func (self *BaseFeed) RemoveMany(activties []*activity.BaseActivty) int {
-	var addCount int
+func (self *BaseFeed) RemoveMany(activties []*activity.BaseActivty) int64 {
+	var addCount int64
 	if self.TimelineStorage != nil {
 		addCount = self.TimelineStorage.RemoveMany(self.Key, activties)
 	} else {
@@ -50,7 +50,7 @@ func (self *BaseFeed) RemoveMany(activties []*activity.BaseActivty) int {
 	return addCount
 }
 
-func (self *BaseFeed) GetActivities(pgx int, pgl int) []*activity.BaseActivty {
+func (self *BaseFeed) GetActivities(pgx int64, pgl int64) []*activity.BaseActivty {
 	ret := make([]*activity.BaseActivty, 0, 0)
 	if self.TimelineStorage != nil {
 		ret = self.TimelineStorage.GetActivities(self.Key, pgx, pgl)

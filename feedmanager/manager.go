@@ -67,12 +67,17 @@ func (m *Manager) AddActivity(uid int, act *activity.BaseActivty) {
 
 	followerids := m.delegate.GetFollowers(uid)
 	for _, fuid := range followerids {
-		if intSliceContain(act.Allow, fuid) == false {
-			continue
+		if len(act.Allow) > 0 {
+			if intSliceContain(act.Allow, fuid) == false {
+				continue
+			}
 		}
-		if intSliceContain(act.Deny, fuid) {
-			continue
+		if len(act.Deny) > 0 {
+			if intSliceContain(act.Deny, fuid) {
+				continue
+			}
 		}
+
 		actBytes, err := act.Serialize()
 		if err == nil {
 			if _, err := m.cli.DelayKwargs("feedmanager.add_activities_operation", map[string]interface{}{
@@ -86,7 +91,7 @@ func (m *Manager) AddActivity(uid int, act *activity.BaseActivty) {
 
 }
 
-func (m *Manager) LoadPersonFeeds(uid int, pgx int, pgl int) []*activity.BaseActivty {
+func (m *Manager) LoadPersonFeeds(uid int, pgx int64, pgl int64) []*activity.BaseActivty {
 	user_feed := m.delegate.GetPersonalFeed(uid)
 	return user_feed.GetActivities(pgx, pgl)
 }
@@ -131,6 +136,11 @@ func (m *Manager) RemoveFeedActivities(uid int, acts []*activity.BaseActivty) {
 	}
 }
 
-func (m *Manager) LoadFeeds(uid int, pgx int, pgl int) []*activity.BaseActivty {
+func (m *Manager) LoadFeeds(uid int, pgx int64, pgl int64) []*activity.BaseActivty {
+	user_feed := m.delegate.GetFeed(uid)
+	return user_feed.GetActivities(pgx, pgl)
+}
+
+func (m *Manager) LoadGlobalFeeds(pgx int64, pgl int64) []*activity.BaseActivty {
 	return m.feeds.GetActivities(pgx, pgl)
 }

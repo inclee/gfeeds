@@ -7,10 +7,10 @@ import (
 type AggregatorFeed struct {
 	*BaseFeed
 	aggregator Aggregator
-	maxLen     int
+	maxLen     int64
 }
 
-func NewAggregatorFeed(agg Aggregator, maxLen int) *AggregatorFeed {
+func NewAggregatorFeed(agg Aggregator, maxLen int64) *AggregatorFeed {
 	return &AggregatorFeed{BaseFeed: &BaseFeed{}, aggregator: agg, maxLen: maxLen}
 }
 
@@ -18,15 +18,16 @@ func (self *AggregatorFeed) Add(activty *activity.BaseActivty) {
 	self.AddMany([]*activity.BaseActivty{activty})
 }
 
-func (self *AggregatorFeed) AddMany(activties []*activity.BaseActivty) int {
+func (self *AggregatorFeed) AddMany(activties []*activity.BaseActivty) int64 {
 	acts := self.GetActivities(0, self.maxLen)
 	newActs, oldActs := self.aggregator.Merge(acts, activties)
 	self.BaseFeed.AddMany(newActs)
 	org_len := len(acts)
 	all_len := org_len + len(newActs) - len(oldActs)
-	rm := all_len - self.maxLen
+	rm := int64(all_len) - self.maxLen
 	rmi := 0
-	for i := 0; i < rm; rmi++ {
+	var i int64
+	for ; i < rm; rmi++ {
 		oact := acts[org_len-rmi-1]
 		find := false
 		for _, o := range oldActs {
@@ -37,13 +38,13 @@ func (self *AggregatorFeed) AddMany(activties []*activity.BaseActivty) int {
 		}
 		if !find {
 			oldActs = append(oldActs, oact)
-			i += 1
+			i++
 		}
 	}
 	if len(oldActs) > 0 {
 		self.BaseFeed.RemoveMany(oldActs)
 	}
-	return len(newActs)
+	return int64(len(newActs))
 }
 func (self *AggregatorFeed) Seen(actIds []int) {
 	_add := make([]*activity.BaseActivty, 0, 0)
