@@ -1,15 +1,16 @@
 package feed
 
 import (
-	"github.com/gogap/logrus"
+	"fmt"
+
 	"github.com/inclee/gfeeds/activity"
 	"github.com/inclee/gfeeds/storage"
 )
 
 type Feed interface {
-	Add(activty *activity.BaseActivty)
-	AddMany(activties []*activity.BaseActivty) int64
-	GetActivities(pgx int64, pgl int64) []*activity.BaseActivty
+	Add(activty *activity.BaseActivty) error
+	AddMany(activties []*activity.BaseActivty) (int64, error)
+	GetActivities(pgx int64, pgl int64) ([]*activity.BaseActivty, error)
 }
 
 type BaseFeed struct {
@@ -26,36 +27,34 @@ func (self *BaseFeed) Init(userid int, key string, timelineStorage storage.TimeL
 	self.ActiveStorage = activityStorage
 }
 
-func (self *BaseFeed) Add(activty *activity.BaseActivty) {
-	self.AddMany([]*activity.BaseActivty{activty})
+func (self *BaseFeed) Add(activty *activity.BaseActivty) (err error) {
+	_, err = self.AddMany([]*activity.BaseActivty{activty})
+	return
 }
 
-func (self *BaseFeed) AddMany(activties []*activity.BaseActivty) int64 {
-	var addCount int64
+func (self *BaseFeed) AddMany(activties []*activity.BaseActivty) (addCount int64, err error) {
 	if self.TimelineStorage != nil {
-		addCount = self.TimelineStorage.AddMany(self.Key, activties)
+		addCount, err = self.TimelineStorage.AddMany(self.Key, activties)
 	} else {
-		logrus.Error("self.TimelineStorage")
+		err = fmt.Errorf("timeline storeage is null")
 	}
-	return addCount
+	return
 }
 
-func (self *BaseFeed) RemoveMany(activties []*activity.BaseActivty) int64 {
-	var addCount int64
+func (self *BaseFeed) RemoveMany(activties []*activity.BaseActivty) (cnt int64, err error) {
 	if self.TimelineStorage != nil {
-		addCount = self.TimelineStorage.RemoveMany(self.Key, activties)
+		cnt, err = self.TimelineStorage.RemoveMany(self.Key, activties)
 	} else {
-		logrus.Error("self.TimelineStorage")
+		err = fmt.Errorf("timeline storage is null")
 	}
-	return addCount
+	return
 }
 
-func (self *BaseFeed) GetActivities(pgx int64, pgl int64) []*activity.BaseActivty {
-	ret := make([]*activity.BaseActivty, 0, 0)
+func (self *BaseFeed) GetActivities(pgx int64, pgl int64) (acts []*activity.BaseActivty, err error) {
 	if self.TimelineStorage != nil {
-		ret = self.TimelineStorage.GetActivities(self.Key, pgx, pgl)
+		acts, err = self.TimelineStorage.GetActivities(self.Key, pgx, pgl)
 	} else {
-		logrus.Error("self.TimelineStorage")
+		err = fmt.Errorf("time line storage is null")
 	}
-	return ret
+	return
 }

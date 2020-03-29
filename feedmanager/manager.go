@@ -31,13 +31,16 @@ type Manager struct {
 	follow_activity_limit int
 	delegate              ManagerDelegate
 	feeds                 *feed.RedisFeed
+	badmoods              *feed.RedisFeed
 }
 
 func NewFeedManager(delegate ManagerDelegate, cfg config.ManagerConfig) *Manager {
 	m := new(Manager)
 	m.Init(delegate, cfg)
 	m.feeds = feed.NewRedisFeed()
+	m.badmoods = feed.NewRedisFeed()
 	m.feeds.Init(0, fmt.Sprint("global_feed_"), storage.DefaultRedisTimelineStorage, &storage.ActiveStorage{})
+	m.badmoods.Init(0, fmt.Sprint("badmoods_feed_"), storage.DefaultRedisTimelineStorage, &storage.ActiveStorage{})
 	config.Config = cfg
 	return m
 }
@@ -91,12 +94,12 @@ func (m *Manager) AddActivity(uid int, act *activity.BaseActivty) {
 
 }
 
-func (m *Manager) LoadPersonFeeds(uid int, pgx int64, pgl int64) []*activity.BaseActivty {
+func (m *Manager) LoadPersonFeeds(uid int, pgx int64, pgl int64) (acts []*activity.BaseActivty, err error) {
 	user_feed := m.delegate.GetPersonalFeed(uid)
 	return user_feed.GetActivities(pgx, pgl)
 }
 
-func (m *Manager) LoadInteractFeeds(uid int) []*activity.BaseActivty {
+func (m *Manager) LoadInteractFeeds(uid int) (acts []*activity.BaseActivty, err error) {
 	feed := m.delegate.GetInterActFeed(uid)
 	return feed.GetActivities(0, 100)
 }
@@ -136,11 +139,17 @@ func (m *Manager) RemoveFeedActivities(uid int, acts []*activity.BaseActivty) {
 	}
 }
 
-func (m *Manager) LoadFeeds(uid int, pgx int64, pgl int64) []*activity.BaseActivty {
+func (m *Manager) LoadFeeds(uid int, pgx int64, pgl int64) (acts []*activity.BaseActivty, err error) {
 	user_feed := m.delegate.GetFeed(uid)
 	return user_feed.GetActivities(pgx, pgl)
 }
 
-func (m *Manager) LoadGlobalFeeds(pgx int64, pgl int64) []*activity.BaseActivty {
+func (m *Manager) LoadGlobalFeeds(pgx int64, pgl int64) (acts []*activity.BaseActivty, err error) {
 	return m.feeds.GetActivities(pgx, pgl)
+}
+func (m *Manager) AddBadMoodFeed(act *activity.BaseActivty) (err error) {
+	return m.badmoods.Add(act)
+}
+func (m *Manager) LoadBadMoodFeeds(pgx int64, pgl int64) (acts []*activity.BaseActivty, err error) {
+	return m.badmoods.GetActivities(pgx, pgl)
 }

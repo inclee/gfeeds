@@ -27,7 +27,7 @@ func NewRedisTimeLineStorage(delegate StoragerDelegate) *RedisTimeLineStorage {
 type RedisTimeLineStorageDelegate struct {
 }
 
-func (self *RedisTimeLineStorageDelegate) AddToStorage(key string, activties []*activity.BaseActivty) int64 {
+func (self *RedisTimeLineStorageDelegate) AddToStorage(key string, activties []*activity.BaseActivty) (cnt int64, err error) {
 	scores := make([]float64, len(activties), len(activties))
 	values := make([]interface{}, len(activties), len(activties))
 	//ext := make([]string,len(activties),len(activties))
@@ -35,35 +35,29 @@ func (self *RedisTimeLineStorageDelegate) AddToStorage(key string, activties []*
 		if act == nil {
 			log.Error("activity is nil")
 		}
-		if score, err := strconv.ParseFloat(act.SerializeId(),64); err == nil {
+		if score, err := strconv.ParseFloat(act.SerializeId(), 64); err == nil {
 			scores[idx] = score
 			values[idx], _ = act.Serialize()
 		}
 	}
-	n, err := Cache.sortedSetCache.AddManay(key, scores, values)
-	if err != nil {
-		println(err.Error())
-	}
-	return n
+	cnt, err = Cache.sortedSetCache.AddManay(key, scores, values)
+	return
 }
-func (self *RedisTimeLineStorageDelegate) RemoveFromStorage(key string, activties []*activity.BaseActivty) int64 {
+func (self *RedisTimeLineStorageDelegate) RemoveFromStorage(key string, activties []*activity.BaseActivty) (cnt int64, err error) {
 	values := make([]interface{}, len(activties), len(activties))
 	for idx, a := range activties {
 		values[idx], _ = a.Serialize()
 	}
 	//ext := make([]string,len(activties),len(activties))
-	n, err := Cache.sortedSetCache.RemoveManay(key, values)
-	if err != nil {
-		println(err.Error())
-	}
-	return n
+	cnt, err = Cache.sortedSetCache.RemoveManay(key, values)
+	return
 }
-func (self *RedisTimeLineStorageDelegate) GetActivities(key string, pgx int64, pgl int64) []*activity.BaseActivty {
+func (self *RedisTimeLineStorageDelegate) GetActivities(key string, pgx int64, pgl int64) (acts []*activity.BaseActivty, err error) {
 	items, err := Cache.sortedSetCache.GetMany(key, pgx, pgl)
 	if err != nil {
-		log.Error(err.Error())
+		return
 	}
-	acts := make([]*activity.BaseActivty, 0, 0)
+	acts = make([]*activity.BaseActivty, 0, 0)
 	for _, item := range items {
 		act := new(activity.BaseActivty)
 		if err := json.Unmarshal([]byte(item), act); err != nil {
@@ -72,5 +66,5 @@ func (self *RedisTimeLineStorageDelegate) GetActivities(key string, pgx int64, p
 			acts = append(acts, act)
 		}
 	}
-	return acts
+	return acts, err
 }
