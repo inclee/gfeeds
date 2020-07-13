@@ -8,34 +8,47 @@ import (
 
 type Verb int
 
-type ActObject struct {
-	Id   int `json:id`
-	Type int `json:type`
+type Object struct {
+	Id   int `json:"id"`
+	Type int `json:"type"`
+}
+
+func (o Object) Equal(ot Object) bool {
+	return o.Id == ot.Id && o.Type == ot.Type
 }
 
 type BaseActivty struct {
-	Actor  int       `json:"actor"`
-	Verb   Verb      `json:"verb"`
-	Object ActObject `json:"object"`
-	Target int       `json:"target"`
-	Time   time.Time `json:"time"`
-	Private bool 	 `json:"private"`
-	Allow  []int     `json:"allow"`
-	Deny   []int     `json:deny`
-	Extra  string    `json:"extra"`
+	Actor     int           `json:"actor"`
+	Verb      Verb          `json:"verb"`
+	VerbObj   Object        `json:"verbobj"`
+	Target    int           `json:"target"`
+	TargetObj Object        `json:"targetobj"`
+	Time      time.Time     `json:"time"`
+	Private   bool          `json:"private"`
+	Allow     []int         `json:"allow"`
+	Deny      []int         `json:"deny"`
+	Extra     string        `json:"extra"`
+	Context   ActiveContext `json:"context"`
 }
 
-func NewActivity(actor int, verb Verb, object ActObject, target int, time time.Time,private bool,allow []int,deny []int, extra string) *BaseActivty {
+type ActiveContext struct {
+	RootId   int `json:"root_id"`
+	RootType int `json:"root_type"`
+}
+
+func NewActivity(actor int, verb Verb, verbobj Object, target int, targetobj Object, time time.Time, private bool, allow []int, deny []int, extra string, context ActiveContext) *BaseActivty {
 	act := new(BaseActivty)
 	act.Actor = actor
 	act.Verb = verb
-	act.Object = object
+	act.VerbObj = verbobj
 	act.Target = target
+	act.TargetObj = targetobj
 	act.Time = time
 	act.Private = private
 	act.Allow = allow
 	act.Deny = deny
 	act.Extra = extra
+	act.Context = context
 	return act
 }
 
@@ -47,16 +60,18 @@ func (self *BaseActivty) Serialize() ([]byte, error) {
 	return json.Marshal(self)
 }
 
-func  (self *BaseActivty) DeepCopy() (*BaseActivty) {
+func (self *BaseActivty) DeepCopy() *BaseActivty {
 	return &BaseActivty{
-		Actor: self.Actor,
-		Verb: self.Verb,
-		Object: self.Object,
-		Target: self.Target,
-		Time : self.Time,
-		Private: self.Private,
-		Allow: self.Allow,
-		Deny: self.Deny,
-		Extra: self.Extra,
+		Actor:     self.Actor,
+		Verb:      self.Verb,
+		VerbObj:   self.VerbObj,
+		Target:    self.Target,
+		TargetObj: self.TargetObj,
+		Time:      self.Time,
+		Private:   self.Private,
+		Allow:     self.Allow,
+		Deny:      self.Deny,
+		Context:   self.Context,
+		Extra:     self.Extra,
 	}
 }

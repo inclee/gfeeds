@@ -2,11 +2,10 @@ package feed
 
 import (
 	"encoding/json"
-	"strconv"
 	"time"
 
-	set "github.com/deckarep/golang-set"
 	"github.com/inclee/gfeeds/activity"
+	"github.com/inclee/gfeeds/util"
 )
 
 type Aggregator interface {
@@ -22,14 +21,22 @@ func (agg *InteractAggregator) Merge(cur []*activity.BaseActivty, new []*activit
 	for _, _new := range new {
 		find := false
 		for _, _cur := range cur {
-			if _cur.Verb == _new.Verb && _cur.Object.Id == _new.Object.Id && _cur.Object.Type == _new.Object.Type && _cur.Actor > 0 { //find
-				actSet := set.NewSet()
-				json.Unmarshal([]byte(_cur.Extra), &actSet)
-				actor := strconv.Itoa(_new.Actor)
-				if actSet.Contains(actor) == false {
+			if _cur.Verb == _new.Verb && _cur.VerbObj.Equal(_new.VerbObj) && _cur.TargetObj.Equal(_new.TargetObj) && _cur.Actor > 0 { //find
+				actList := make([]int, 0, 0)
+				json.Unmarshal([]byte(_cur.Extra), &actList)
+				actor := _new.Actor
+				if util.IntSliceContain(actList, actor) == false {
 					a := _cur.DeepCopy()
-					actSet.Add(actor)
-					if data, err := json.Marshal(actSet); err == nil {
+					actList = append(actList, actor)
+					if data, err := json.Marshal(actList); err == nil {
+						a.Extra = string(data)
+						_add = append(_add, a)
+						_remove = append(_remove, _cur)
+					}
+				} else {
+					a := _cur.DeepCopy()
+					util.IntSliceMoveTo(&actList, actor, 0)
+					if data, err := json.Marshal(actList); err == nil {
 						a.Extra = string(data)
 						_add = append(_add, a)
 						_remove = append(_remove, _cur)
@@ -39,9 +46,8 @@ func (agg *InteractAggregator) Merge(cur []*activity.BaseActivty, new []*activit
 			}
 		}
 		if find == false {
-			actset := set.NewSet(strconv.Itoa(_new.Actor))
-			if extra, err := json.Marshal(actset); err == nil {
-				_newInact := activity.NewActivity(int(time.Now().Unix()), _new.Verb, _new.Object, _new.Target, _new.Time, false, []int{}, []int{}, string(extra))
+			if extra, err := json.Marshal([]int{_new.Actor}); err == nil {
+				_newInact := activity.NewActivity(int(time.Now().Unix()), _new.Verb, _new.VerbObj, _new.Target, _new.TargetObj, _new.Time, false, []int{}, []int{}, string(extra), _new.Context)
 				_add = append(_add, _newInact)
 			}
 		}

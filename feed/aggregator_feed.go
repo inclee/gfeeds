@@ -1,17 +1,22 @@
 package feed
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/inclee/gfeeds/activity"
+	"github.com/inclee/gfeeds/storage"
 )
 
 type AggregatorFeed struct {
 	*BaseFeed
 	aggregator Aggregator
+	typ        int
 	maxLen     int64
 }
 
-func NewAggregatorFeed(agg Aggregator, maxLen int64) *AggregatorFeed {
-	return &AggregatorFeed{BaseFeed: &BaseFeed{}, aggregator: agg, maxLen: maxLen}
+func NewAggregatorFeed(agg Aggregator, typ int, maxLen int64) *AggregatorFeed {
+	return &AggregatorFeed{BaseFeed: &BaseFeed{}, aggregator: agg, typ: typ, maxLen: maxLen}
 }
 
 func (self *AggregatorFeed) Add(activty *activity.BaseActivty) (err error) {
@@ -25,10 +30,13 @@ func (self *AggregatorFeed) AddMany(activties []*activity.BaseActivty) (cnt int6
 		return 0, err
 	}
 	newActs, oldActs := self.aggregator.Merge(acts, activties)
-	_, err = self.BaseFeed.AddMany(newActs)
-	if err != nil {
-		return 0, err
+	if len(newActs) > 0 {
+		_, err = self.BaseFeed.AddMany(newActs)
+		if err != nil {
+			return 0, err
+		}
 	}
+
 	org_len := len(acts)
 	all_len := org_len + len(newActs) - len(oldActs)
 	rm := int64(all_len) - self.maxLen
@@ -50,30 +58,49 @@ func (self *AggregatorFeed) AddMany(activties []*activity.BaseActivty) (cnt int6
 	}
 	if len(oldActs) > 0 {
 		_, err = self.BaseFeed.RemoveMany(oldActs)
-
 	}
+	newId := make([]string, 0, 0)
+	for _, na := range newActs {
+		newId = append(newId, strconv.Itoa(na.VerbObj.Id))
+	}
+	err = storage.RedisClent.SAdd(fmt.Sprintf("interact_%d_%d", self.UserId, self.typ), newId).Err()
 	return int64(len(newActs)), err
 }
-func (self *AggregatorFeed) Seen(actIds []int) (err error) {
-	_add := make([]*activity.BaseActivty, 0, 0)
-	_remove := make([]*activity.BaseActivty, 0, 0)
-	acts, err := self.GetActivities(0, self.maxLen)
+
+func (self *AggregatorFeed) NewIds() ([]int, error) {
+	ret := make([]int, 0, 0)
+	ids, err := storage.RedisClent.SMembers(fmt.Sprintf("interact_%d_%d", self.UserId, self.typ)).Result()
 	if err != nil {
-		return err
+		return []int{}, err
 	}
-	for _, act := range acts {
-		for _, id := range actIds {
-			if act.Actor == id {
-				a := act.DeepCopy()
-				a.Actor = 0
-				_add = append(_add, a)
-				_remove = append(_remove, act)
-			}
-		}
+	for _, id := range ids {
+		aid, _ := strconv.Atoi(id)
+		ret = append(ret, aid)
 	}
-	_, err = self.BaseFeed.AddMany(_add)
-	if err == nil {
-		_, err = self.BaseFeed.RemoveMany(_remove)
-	}
-	return
+	return ret, err
+}
+
+func (self *AggregatorFeed) Seen(actIds []int) (err error) {
+	err = storage.RedisClent.SRem(fmt.Sprintf("interact_%d_%d", self.UserId, self.typ), actIds).Err()
+	// _add := make([]*activity.BaseActivty, 0, 0)
+	// _remove := make([]*activity.BaseActivty, 0, 0)
+	// acts, err := self.GetActivities(0, self.maxLen)
+	// if err != nil {
+	// 	return err
+	// }
+	// for _, act := range acts {
+	// 	for _, id := range actIds {
+	// 		if act.Actor == id {
+	// 			a := act.DeepCopy()
+	// 			a.Actor = 0
+	// 			_add = append(_add, a)
+	// 			_remove = append(_remove, act)
+	// 		}
+	// 	}
+	// }
+	// _, err = self.BaseFeed.AddMany(_add)
+	// if err == nil {
+	// 	_, err = self.BaseFeed.RemoveMany(_remove)
+	// }
+	return err
 }

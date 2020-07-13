@@ -4,14 +4,16 @@ import (
 	"github.com/go-redis/redis"
 )
 
+var RedisClent *redis.Client
+
 type RedisCache struct {
-	key     string
-	cluster *redis.ClusterClient
-	server  string
+	key    string
+	conn   *redis.Client
+	server string
 }
 
-func (self *RedisCache) Init(cluster *redis.ClusterClient) {
-	self.cluster = cluster
+func (self *RedisCache) Init(conn *redis.Client) {
+	self.conn = conn
 }
 
 type RedisListCache struct {
@@ -34,17 +36,17 @@ func (self RedisSortedSetCache) AddManay(key string, scores []float64, values []
 			Member: values[idx],
 		}
 	}
-	rcvn, err = self.cluster.ZAdd(key, params...).Result()
+	rcvn, err = self.conn.ZAdd(key, params...).Result()
 	return
 }
 
 func (self RedisSortedSetCache) RemoveManay(key string, values []interface{}) (rcvn int64, err error) {
-	rcvn, err = self.cluster.ZRem(key, values...).Result()
+	rcvn, err = self.conn.ZRem(key, values...).Result()
 	return
 }
 
 func (self RedisSortedSetCache) GetMany(key string, pgx int64, pgl int64) ([]string, error) {
-	rets, err := self.cluster.ZRevRangeByScore(key, redis.ZRangeBy{
+	rets, err := self.conn.ZRevRangeByScore(key, redis.ZRangeBy{
 		Min:    "-inf",
 		Max:    "+inf",
 		Offset: int64(pgx * pgl),
@@ -65,15 +67,21 @@ type RedisTimeLineCache struct {
 }
 
 func (self *RedisTimeLineCache) Init(servers []string) {
-	cluster := redis.NewClusterClient(&redis.ClusterOptions{
-		Addrs:    servers,
-		Password: "v7baLZM9efsgvRI7",
+	// conn := redis.NewClusterClient(&redis.ClusterOptions{
+	// 	Addrs: servers,
+	// 	// Password: "v7baLZM9efsgvRI7",
+	// })
+	conn := redis.NewClient(&redis.Options{
+		Addr:     "127.0.0.1:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
 	})
+	RedisClent = conn
 	self.sortedSetCache = new(RedisSortedSetCache)
 	self.listCache = new(RedisListCache)
 	self.hashCache = new(RedisHaseCache)
 
-	self.sortedSetCache.Init(cluster)
-	self.listCache.Init(cluster)
-	self.hashCache.Init(cluster)
+	self.sortedSetCache.Init(conn)
+	self.listCache.Init(conn)
+	self.hashCache.Init(conn)
 }
