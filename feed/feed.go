@@ -14,13 +14,13 @@ type Feed interface {
 }
 
 type BaseFeed struct {
-	UserId          int                      `json:"user_id"`
+	UserId          uint64                   `json:"user_id"`
 	Key             string                   `json:"key"`
 	TimelineStorage storage.TimeLineStorager `json:"timeline_storage"`
 	ActiveStorage   storage.ActiveStorager   `json:"active_storage"`
 }
 
-func (self *BaseFeed) Init(userid int, key string, timelineStorage storage.TimeLineStorager, activityStorage storage.ActiveStorager) {
+func (self *BaseFeed) Init(userid uint64, key string, timelineStorage storage.TimeLineStorager, activityStorage storage.ActiveStorager) {
 	self.UserId = userid
 	self.Key = key
 	self.TimelineStorage = timelineStorage

@@ -22,10 +22,10 @@ func (agg *InteractAggregator) Merge(cur []*activity.BaseActivty, new []*activit
 		find := false
 		for _, _cur := range cur {
 			if _cur.Verb == _new.Verb && _cur.VerbObj.Equal(_new.VerbObj) && _cur.TargetObj.Equal(_new.TargetObj) && _cur.Actor > 0 { //find
-				actList := make([]int, 0, 0)
+				actList := make([]uint64, 0, 0)
 				json.Unmarshal([]byte(_cur.Extra), &actList)
 				actor := _new.Actor
-				if util.IntSliceContain(actList, actor) == false {
+				if util.UInt64SliceContain(actList, actor) == false {
 					a := _cur.DeepCopy()
 					actList = append(actList, actor)
 					if data, err := json.Marshal(actList); err == nil {
@@ -35,7 +35,7 @@ func (agg *InteractAggregator) Merge(cur []*activity.BaseActivty, new []*activit
 					}
 				} else {
 					a := _cur.DeepCopy()
-					util.IntSliceMoveTo(&actList, actor, 0)
+					util.UInt64SliceMoveTo(&actList, actor, 0)
 					if data, err := json.Marshal(actList); err == nil {
 						a.Extra = string(data)
 						_add = append(_add, a)
@@ -46,8 +46,8 @@ func (agg *InteractAggregator) Merge(cur []*activity.BaseActivty, new []*activit
 			}
 		}
 		if find == false {
-			if extra, err := json.Marshal([]int{_new.Actor}); err == nil {
-				_newInact := activity.NewActivity(int(time.Now().Unix()), _new.Verb, _new.VerbObj, _new.Target, _new.TargetObj, _new.Time, false, []int{}, []int{}, string(extra), _new.Context)
+			if extra, err := json.Marshal([]uint64{_new.Actor}); err == nil {
+				_newInact := activity.NewActivity(uint64(time.Now().Unix()), _new.Verb, _new.VerbObj, _new.Target, _new.TargetObj, _new.Time, false, []uint64{}, []uint64{}, string(extra), _new.Context)
 				_add = append(_add, _newInact)
 			}
 		}

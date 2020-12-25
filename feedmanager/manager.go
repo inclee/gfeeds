@@ -7,6 +7,7 @@ import (
 	"github.com/inclee/gfeeds/config"
 	"github.com/inclee/gfeeds/feed"
 	"github.com/inclee/gfeeds/storage"
+	"github.com/inclee/gfeeds/util"
 	"github.com/inclee/gocelery"
 )
 
@@ -20,10 +21,10 @@ func intSliceContain(slice []int, v int) bool {
 }
 
 type ManagerDelegate interface {
-	GetFollowers(user int) []int
-	GetPersonalFeed(user int) feed.Feed
-	GetFeed(user int) feed.Feed
-	GetInterActFeed(uid, typ int) feed.Feed
+	GetFollowers(user uint64) []uint64
+	GetPersonalFeed(user uint64) feed.Feed
+	GetFeed(user uint64) feed.Feed
+	GetInterActFeed(uid uint64, typ int) feed.Feed
 }
 
 type Manager struct {
@@ -54,13 +55,13 @@ func (m *Manager) Init(delegate ManagerDelegate, cfg config.ManagerConfig) (err 
 	return nil
 }
 
-func (m *Manager) AddInterActivity(uid, typ int, act *activity.BaseActivty) {
+func (m *Manager) AddInterActivity(uid uint64, typ int, act *activity.BaseActivty) {
 	if act.Target != uid {
 		intactFeed := m.delegate.GetInterActFeed(act.Target, typ)
 		intactFeed.Add(act)
 	}
 }
-func (m *Manager) AddActivity(uid int, insertToSelf bool, act *activity.BaseActivty) {
+func (m *Manager) AddActivity(uid uint64, insertToSelf bool, act *activity.BaseActivty) {
 	m.feeds.Add(act)
 	if insertToSelf {
 		user_feed := m.delegate.GetPersonalFeed(uid)
@@ -73,12 +74,12 @@ func (m *Manager) AddActivity(uid int, insertToSelf bool, act *activity.BaseActi
 	followerids := m.delegate.GetFollowers(uid)
 	for _, fuid := range followerids {
 		if len(act.Allow) > 0 {
-			if intSliceContain(act.Allow, fuid) == false {
+			if util.UInt64SliceContain(act.Allow, fuid) == false {
 				continue
 			}
 		}
 		if len(act.Deny) > 0 {
-			if intSliceContain(act.Deny, fuid) {
+			if util.UInt64SliceContain(act.Deny, fuid) {
 				continue
 			}
 		}
@@ -96,12 +97,12 @@ func (m *Manager) AddActivity(uid int, insertToSelf bool, act *activity.BaseActi
 
 }
 
-func (m *Manager) LoadPersonFeeds(uid int, pgx int64, pgl int64) (acts []*activity.BaseActivty, err error) {
+func (m *Manager) LoadPersonFeeds(uid uint64, pgx int64, pgl int64) (acts []*activity.BaseActivty, err error) {
 	user_feed := m.delegate.GetPersonalFeed(uid)
 	return user_feed.GetActivities(pgx, pgl)
 }
 
-func (m *Manager) LoadInteractFeeds(uid, typ int, pgx, pgl int64) (acts []*activity.BaseActivty, newIds []int, err error) {
+func (m *Manager) LoadInteractFeeds(uid uint64, typ int, pgx, pgl int64) (acts []*activity.BaseActivty, newIds []int, err error) {
 	_feed := m.delegate.GetInterActFeed(uid, typ)
 	if actFeed, ok := _feed.(*feed.AggregatorFeed); ok {
 		newIds, err = actFeed.NewIds()
@@ -112,14 +113,14 @@ func (m *Manager) LoadInteractFeeds(uid, typ int, pgx, pgl int64) (acts []*activ
 	}
 	return acts, newIds, err
 }
-func (m *Manager) SeeInteractFeeds(uid, typ int, feedsId []int) {
+func (m *Manager) SeeInteractFeeds(uid uint64, typ int, feedsId []int) {
 	_feed := m.delegate.GetInterActFeed(uid, typ)
 	if actFeed, ok := _feed.(*feed.AggregatorFeed); ok {
 		actFeed.Seen(feedsId)
 	}
 }
 
-func (m *Manager) InsertFeedActivities(uid int, acts []*activity.BaseActivty) {
+func (m *Manager) InsertFeedActivities(uid uint64, acts []*activity.BaseActivty) {
 	for _, act := range acts {
 		actBytes, err := act.Serialize()
 		if err == nil {
@@ -133,7 +134,7 @@ func (m *Manager) InsertFeedActivities(uid int, acts []*activity.BaseActivty) {
 	}
 }
 
-func (m *Manager) RemoveFeedActivities(uid int, acts []*activity.BaseActivty) {
+func (m *Manager) RemoveFeedActivities(uid uint64, acts []*activity.BaseActivty) {
 	for _, act := range acts {
 		actBytes, err := act.Serialize()
 		if err == nil {
@@ -147,7 +148,7 @@ func (m *Manager) RemoveFeedActivities(uid int, acts []*activity.BaseActivty) {
 	}
 }
 
-func (m *Manager) LoadFeeds(uid int, pgx int64, pgl int64) (acts []*activity.BaseActivty, err error) {
+func (m *Manager) LoadFeeds(uid uint64, pgx int64, pgl int64) (acts []*activity.BaseActivty, err error) {
 	user_feed := m.delegate.GetFeed(uid)
 	return user_feed.GetActivities(pgx, pgl)
 }
