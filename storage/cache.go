@@ -45,7 +45,7 @@ func (self RedisSortedSetCache) RemoveManay(key string, values []interface{}) (r
 	return
 }
 
-func (self RedisSortedSetCache) GetMany(key string, pgx int64, pgl int64) ([]string, error) {
+func (self RedisSortedSetCache) GetMany(key string, pgx int, pgl int) ([]string, error) {
 	rets, err := self.conn.ZRevRangeByScore(key, redis.ZRangeBy{
 		Min:    "-inf",
 		Max:    "+inf",

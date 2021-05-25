@@ -52,7 +52,7 @@ func (self *RedisTimeLineStorageDelegate) RemoveFromStorage(key string, activtie
 	cnt, err = Cache.sortedSetCache.RemoveManay(key, values)
 	return
 }
-func (self *RedisTimeLineStorageDelegate) GetActivities(key string, pgx int64, pgl int64) (acts []*activity.BaseActivty, err error) {
+func (self *RedisTimeLineStorageDelegate) GetActivities(key string, pgx int, pgl int) (acts []*activity.BaseActivty, err error) {
 	items, err := Cache.sortedSetCache.GetMany(key, pgx, pgl)
 	if err != nil {
 		return

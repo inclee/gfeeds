@@ -9,23 +9,26 @@ import (
 )
 
 type AggregatorFeed struct {
-	*BaseFeed
+	*NotificationFeed
 	aggregator Aggregator
-	typ        int
-	maxLen     int64
+	id         string
+	maxLen     int
 }
 
-func NewAggregatorFeed(agg Aggregator, typ int, maxLen int64) *AggregatorFeed {
-	return &AggregatorFeed{BaseFeed: &BaseFeed{}, aggregator: agg, typ: typ, maxLen: maxLen}
+func NewAggregatorFeed(uid uint64, id string, agg Aggregator, maxLen int) *AggregatorFeed {
+	return &AggregatorFeed{NotificationFeed: NewNotificationFeed(uid), aggregator: agg, id: id, maxLen: maxLen}
 }
 
 func (self *AggregatorFeed) Add(activty *activity.BaseActivty) (err error) {
+	if activty.Actor == self.UserId {
+		return nil
+	}
 	_, err = self.AddMany([]*activity.BaseActivty{activty})
 	return
 }
 
 func (self *AggregatorFeed) AddMany(activties []*activity.BaseActivty) (cnt int64, err error) {
-	acts, err := self.GetActivities(0, self.maxLen)
+	acts, err := self.BaseFeed.GetActivities(0, self.maxLen)
 	if err != nil {
 		return 0, err
 	}
@@ -39,9 +42,9 @@ func (self *AggregatorFeed) AddMany(activties []*activity.BaseActivty) (cnt int6
 
 	org_len := len(acts)
 	all_len := org_len + len(newActs) - len(oldActs)
-	rm := int64(all_len) - self.maxLen
+	rm := all_len - self.maxLen
 	rmi := 0
-	var i int64
+	var i int
 	for ; i < rm; rmi++ {
 		oact := acts[org_len-rmi-1]
 		find := false
@@ -63,13 +66,30 @@ func (self *AggregatorFeed) AddMany(activties []*activity.BaseActivty) (cnt int6
 	for _, na := range newActs {
 		newId = append(newId, strconv.Itoa(na.VerbObj.Id))
 	}
-	err = storage.RedisClent.SAdd(fmt.Sprintf("interact_%d_%d", self.UserId, self.typ), newId).Err()
+	err = storage.RedisClent.SAdd(fmt.Sprintf("interact_%d_%s", self.UserId, self.id), newId).Err()
 	return int64(len(newActs)), err
+}
+
+// 	if actFeed, ok := _feed.(*feed.AggregatorFeed); ok {
+// 		newIds, err = actFeed.NewIds()
+// 		if err != nil {
+// 			return acts, newIds, err
+// 		}
+// 		acts, err = _feed.GetActivities(pgx, pgl)
+// 	}
+// 	return acts, newIds, err
+func (self *AggregatorFeed) GetActivities(pgx int, pgl int) (acts []*activity.BaseActivty, newIds []int, err error) {
+	acts, err = self.BaseFeed.GetActivities(pgx, pgl)
+	if err != nil {
+		return
+	}
+	newIds, err = self.NewIds()
+	return
 }
 
 func (self *AggregatorFeed) NewIds() ([]int, error) {
 	ret := make([]int, 0, 0)
-	ids, err := storage.RedisClent.SMembers(fmt.Sprintf("interact_%d_%d", self.UserId, self.typ)).Result()
+	ids, err := storage.RedisClent.SMembers(fmt.Sprintf("interact_%d_%s", self.UserId, self.id)).Result()
 	if err != nil {
 		return []int{}, err
 	}
@@ -81,7 +101,7 @@ func (self *AggregatorFeed) NewIds() ([]int, error) {
 }
 
 func (self *AggregatorFeed) Seen(actIds []int) (err error) {
-	err = storage.RedisClent.SRem(fmt.Sprintf("interact_%d_%d", self.UserId, self.typ), actIds).Err()
+	// err = storage.RedisClent.SRem(fmt.Sprintf("interact_%d_%d", self.UserId, self.typ), actIds).Err()
 	// _add := make([]*activity.BaseActivty, 0, 0)
 	// _remove := make([]*activity.BaseActivty, 0, 0)
 	// acts, err := self.GetActivities(0, self.maxLen)

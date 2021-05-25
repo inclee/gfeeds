@@ -11,7 +11,7 @@ type TimeLineStorager interface {
 	Add(key string, activity *activity.BaseActivty) error
 	AddMany(key string, activties []*activity.BaseActivty) (int64, error)
 	RemoveMany(key string, activties []*activity.BaseActivty) (int64, error)
-	GetActivities(key string, pgx int64, pgl int64) ([]*activity.BaseActivty, error)
+	GetActivities(key string, pgx int, pgl int) ([]*activity.BaseActivty, error)
 }
 
 type ActiveStorager interface {
@@ -22,7 +22,7 @@ type ActiveStorager interface {
 type StoragerDelegate interface {
 	AddToStorage(key string, values []*activity.BaseActivty) (int64, error)
 	RemoveFromStorage(key string, values []*activity.BaseActivty) (int64, error)
-	GetActivities(key string, pgx int64, pgl int64) ([]*activity.BaseActivty, error)
+	GetActivities(key string, pgx int, pgl int) ([]*activity.BaseActivty, error)
 }
 
 type BaseStorage struct {
@@ -61,7 +61,7 @@ func (self *TimeLineStorage) RemoveMany(key string, activties []*activity.BaseAc
 	return self.Delegate.RemoveFromStorage(key, activties)
 }
 
-func (self *TimeLineStorage) GetActivities(key string, pgx int64, pgl int64) (acts []*activity.BaseActivty, err error) {
+func (self *TimeLineStorage) GetActivities(key string, pgx int, pgl int) (acts []*activity.BaseActivty, err error) {
 	return self.Delegate.GetActivities(key, pgx, pgl)
 }
 

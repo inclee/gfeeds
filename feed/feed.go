@@ -10,7 +10,7 @@ import (
 type Feed interface {
 	Add(activty *activity.BaseActivty) error
 	AddMany(activties []*activity.BaseActivty) (int64, error)
-	GetActivities(pgx int64, pgl int64) ([]*activity.BaseActivty, error)
+	GetActivities(pgx int, pgl int) ([]*activity.BaseActivty, error)
 }
 
 type BaseFeed struct {
@@ -50,7 +50,7 @@ func (self *BaseFeed) RemoveMany(activties []*activity.BaseActivty) (cnt int64, 
 	return
 }
 
-func (self *BaseFeed) GetActivities(pgx int64, pgl int64) (acts []*activity.BaseActivty, err error) {
+func (self *BaseFeed) GetActivities(pgx int, pgl int) (acts []*activity.BaseActivty, err error) {
 	if self.TimelineStorage != nil {
 		acts, err = self.TimelineStorage.GetActivities(self.Key, pgx, pgl)
 	} else {

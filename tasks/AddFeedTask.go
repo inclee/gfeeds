@@ -12,7 +12,7 @@ import (
 
 type AddFeedTask struct {
 	activities []*activity.BaseActivty
-	feed       *feed.RedisFeed
+	feed       *feed.BaseFeed
 }
 
 func (t *AddFeedTask) ParseKwargs(kwargs map[string]interface{}) error {
@@ -31,10 +31,10 @@ func (t *AddFeedTask) ParseKwargs(kwargs map[string]interface{}) error {
 		}
 	}
 	if user, ok := kwargs["user"]; ok {
-		t.feed = feed.NewRedisFeed()
+		t.feed = &feed.BaseFeed{}
 		intu := uint64(user.(float64))
 		logrus.Info("---> feed_user:", intu)
-		t.feed.Init(intu, fmt.Sprint("in_feed_", intu), storage.NewRedisTimeLineStorage(new(storage.RedisTimeLineStorageDelegate)), &storage.ActiveStorage{})
+		t.feed.Init(intu, fmt.Sprintf(kwargs["target_feed_id"].(string), intu), storage.NewRedisTimeLineStorage(new(storage.RedisTimeLineStorageDelegate)), &storage.ActiveStorage{})
 	}
 	return nil
 }
